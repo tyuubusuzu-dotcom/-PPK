@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.6]</title>
+    <title>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.7]</title>
     <style>
         :root {
             --primary-color: #1a73e8;
@@ -229,7 +229,7 @@
 <body>
 
 <div class="container">
-    <h1>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.6]</h1>
+    <h1>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.7]</h1>
     <div class="subtitle">M4E / L3 などの survey フォルダ内 Timestamp.MRK から必要時間と最寄り基準点を自動算出</div>
 
     <div class="form-group">
@@ -308,9 +308,10 @@
                     <li><b>対象年月日 (Date)</b> ⇒ 算出された年月日を入力</li>
                     <li><b>時間帯 (Hour)</b> ⇒ 算出された推奨時間帯（例: 開始時〜終了時）を指定</li>
                     <li><b>GPS週・通算日 (DOY)</b> ⇒ 必要に応じて表示されている数値を入力・確認</li>
+                    <li><b>衛星・RINEXバージョンの指定</b> ⇒ 衛星は <b>GRJE（GPS, GLONASS, Galileo, QZSS）</b> を選択し、RINEXバージョンは <b>ver3.02</b> を選択してダウンロードする。</li>
                 </ul>
             </li>
-            <li><b>ダウンロード実行</b>：フォーマットを確認して観測データ（RINEX）を保存する。</li>
+            <li><b>ダウンロード実行</b>：設定を確認して観測データを保存する。</li>
         </ol>
     </div>
 
@@ -328,7 +329,6 @@
 </div>
 
 <script>
-    // 国土地理院の正式な公式局番号に完全準拠したマスターデータ（奈良・関西周辺）
     const GSI_STATIONS = [
         { code: "960763", name: "生駒", lat: 34.6974, lon: 135.6997 },
         { code: "960764", name: "天理", lat: 34.5989, lon: 135.8406 },
@@ -351,7 +351,7 @@
     ];
 
     function calcDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371.0; // 地球の半径 (km)
+        const R = 6371.0;
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
         const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
