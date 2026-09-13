@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.7]</title>
+    <title>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.8]</title>
     <style>
         :root {
             --primary-color: #1a73e8;
@@ -229,8 +229,8 @@
 <body>
 
 <div class="container">
-    <h1>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.7]</h1>
-    <div class="subtitle">M4E / L3 などの survey フォルダ内 Timestamp.MRK から必要時間と最寄り基準点を自動算出</div>
+    <h1>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.8]</h1>
+    <div class="subtitle">M4E / L3 などの survey フォルダ内 Timestamp.MRK から必要時間と最寄り基準点を自動算出 (UTC基準)</div>
 
     <div class="form-group">
         <div class="section-title">1. 測地成果・ジオイドモデルの選択</div>
@@ -258,7 +258,7 @@
     </div>
 
     <div class="result-box" id="resultBox">
-        <div class="section-title" style="border-left-color: #137333; margin-bottom: 12px;">3. 国土地理院 電子基準点データ取得用パラメータ ＆ 候補</div>
+        <div class="section-title" style="border-left-color: #137333; margin-bottom: 12px;">3. 補正データ・電子基準点データ取得用パラメータ (UTC)</div>
         
         <div class="result-item">
             <span class="result-label">適用モデル:</span>
@@ -299,14 +299,14 @@
     </div>
 
     <div class="guide-box">
-        <div class="section-title" style="margin-bottom: 8px;">4. データの取得手順・入力マッピングガイド</div>
+        <div class="section-title" style="margin-bottom: 8px;">4. データの取得手順・入力マッピングガイド (UTC基準)</div>
         <ol class="guide-steps">
             <li><b>ログイン・アクセス</b>：下のリンクから国土地理院の電子基準点データ提供サービスにアクセスし、ログイン・注意事項を確認する。</li>
             <li><b>基準点の選択</b>：上で自動判定された「最寄り基準点（正式局番号付）」の局番号をサイトの検索窓に入力して選択する。</li>
-            <li><b>パラメータの入力</b>：上で算出された結果をサイトへ反映する。
+            <li><b>パラメータの入力（UTC）</b>：上で算出された結果をサイトへ反映する。
                 <ul style="margin-top: 4px; margin-bottom: 4px;">
-                    <li><b>対象年月日 (Date)</b> ⇒ 算出された年月日を入力</li>
-                    <li><b>時間帯 (Hour)</b> ⇒ 算出された推奨時間帯（例: 開始時〜終了時）を指定</li>
+                    <li><b>対象年月日 (Date)</b> ⇒ 算出されたUTC年月日を入力</li>
+                    <li><b>時間帯 (Hour)</b> ⇒ 算出されたUTC推奨時間帯を指定（※テラサット等の補正データやVRS購入時もこのUTC時刻に一致させます）</li>
                     <li><b>GPS週・通算日 (DOY)</b> ⇒ 必要に応じて表示されている数値を入力・確認</li>
                     <li><b>衛星・RINEXバージョンの指定</b> ⇒ 衛星は <b>GRJE（GPS, GLONASS, Galileo, QZSS）</b> を選択し、RINEXバージョンは <b>ver3.02</b> を選択してダウンロードする。</li>
                 </ul>
@@ -324,7 +324,7 @@
 
     <div class="note">
         ※ 算出される時間範囲には、PPK解析の精度収束安定化のため前後に15分のバッファを自動付与しています。<br>
-        ※ 測地成果は現場の設計データや公共測量の規定に合わせて適切に選択してください。
+        ※ テラサット・ジャパン等の仮想基準点（VRS）補正データやRINEX取得時は **UTC** を基準に指定してください。
     </div>
 </div>
 
@@ -450,8 +450,7 @@
 
             if (gpsWeek !== null && gpsSec !== null) {
                 let dtUtc = gpsToUtc(gpsWeek, gpsSec);
-                let dtJst = new Date(dtUtc.getTime() + 9 * 3600 * 1000);
-                timestamps.push(dtJst);
+                timestamps.push(dtUtc);
             }
 
             for (let i = 0; i < parts.length; i++) {
@@ -475,10 +474,11 @@
         let rawStart = timestamps[0];
         let rawEnd = timestamps[timestamps.length - 1];
 
+        // 前後に15分のバッファを付与 (UTC基準)
         let bufferStart = new Date(rawStart.getTime() - 15 * 60 * 1000);
         let bufferEnd = new Date(rawEnd.getTime() + 15 * 60 * 1000);
 
-        let startOfYear = new Date(bufferStart.getFullYear(), 0, 1);
+        let startOfYear = new Date(bufferStart.getUTCFullYear(), 0, 1);
         let doy = Math.floor((bufferStart - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
         let doyStr = String(doy).padStart(3, '0');
 
@@ -506,32 +506,32 @@
         const modelSelect = document.getElementById('geoidModel');
         document.getElementById('resModel').innerText = modelSelect.options[modelSelect.selectedIndex].text;
         
-        document.getElementById('resRawStart').innerText = formatDate(rawStart);
-        document.getElementById('resRawEnd').innerText = formatDate(rawEnd);
+        document.getElementById('resRawStart').innerText = formatUtcDate(rawStart);
+        document.getElementById('resRawEnd').innerText = formatUtcDate(rawEnd);
 
-        document.getElementById('resDate').innerText = formatDateYMD(bufferStart);
+        document.getElementById('resDate').innerText = formatUtcDateYMD(bufferStart);
         document.getElementById('resDoy').innerText = doyStr;
-        document.getElementById('resHour').innerText = String(bufferStart.getHours()).padStart(2, '0') + '時 ～ ' + String(bufferEnd.getHours()).padStart(2, '0') + '時';
+        document.getElementById('resHour').innerText = String(bufferStart.getUTCHours()).padStart(2, '0') + '時 ～ ' + String(bufferEnd.getUTCHours()).padStart(2, '0') + '時 (UTC)';
         document.getElementById('resGpsWeek').innerText = gpsWeekCalc;
         document.getElementById('resStations').innerHTML = stationHtml;
 
         resultBox.classList.add('active');
     }
 
-    function formatDate(date) {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        const h = String(date.getHours()).padStart(2, '0');
-        const min = String(date.getMinutes()).padStart(2, '0');
-        const s = String(date.getSeconds()).padStart(2, '0');
-        return `${y}-${m}-${d} ${h}:${min}:${s} (JST)`;
+    function formatUtcDate(date) {
+        const y = date.getUTCFullYear();
+        const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const d = String(date.getUTCDate()).padStart(2, '0');
+        const h = String(date.getUTCHours()).padStart(2, '0');
+        const min = String(date.getUTCMinutes()).padStart(2, '0');
+        const s = String(date.getUTCSeconds()).padStart(2, '0');
+        return `${y}-${m}-${d} ${h}:${min}:${s} (UTC)`;
     }
 
-    function formatDateYMD(date) {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
+    function formatUtcDateYMD(date) {
+        const y = date.getUTCFullYear();
+        const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const d = String(date.getUTCDate()).padStart(2, '0');
         return `${y}-${m}-${d}`;
     }
 </script>
