@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.5]</title>
+    <title>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.6]</title>
     <style>
         :root {
             --primary-color: #1a73e8;
@@ -229,7 +229,7 @@
 <body>
 
 <div class="container">
-    <h1>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.5]</h1>
+    <h1>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.6]</h1>
     <div class="subtitle">M4E / L3 などの survey フォルダ内 Timestamp.MRK から必要時間と最寄り基準点を自動算出</div>
 
     <div class="form-group">
@@ -291,7 +291,7 @@
         </div>
         <hr style="border: 0; border-top: 1px solid #d4edda; margin: 10px 0;">
         <div class="result-item" style="display: block;">
-            <span class="result-label" style="display: block; width: 100%; margin-bottom: 4px;">おすすめ最寄り基準点 (公式局番号付):</span>
+            <span class="result-label" style="display: block; width: 100%; margin-bottom: 4px;">おすすめ最寄り基準点 (正式局番号付):</span>
             <div id="resStations" class="station-list">
                 <!-- 自動算出された候補がここに表示されます -->
             </div>
@@ -302,7 +302,7 @@
         <div class="section-title" style="margin-bottom: 8px;">4. データの取得手順・入力マッピングガイド</div>
         <ol class="guide-steps">
             <li><b>ログイン・アクセス</b>：下のリンクから国土地理院の電子基準点データ提供サービスにアクセスし、ログイン・注意事項を確認する。</li>
-            <li><b>基準点の選択</b>：上で自動判定された「最寄り基準点（公式局番号付）」の局名や番号を参考に、サイト上の都道府県一覧や検索から選択する。</li>
+            <li><b>基準点の選択</b>：上で自動判定された「最寄り基準点（正式局番号付）」の局番号をサイトの検索窓に入力して選択する。</li>
             <li><b>パラメータの入力</b>：上で算出された結果をサイトへ反映する。
                 <ul style="margin-top: 4px; margin-bottom: 4px;">
                     <li><b>対象年月日 (Date)</b> ⇒ 算出された年月日を入力</li>
@@ -328,14 +328,14 @@
 </div>
 
 <script>
-    // 国土地理院の正式な局番号（局番）に合わせたマスターデータ
+    // 国土地理院の正式な公式局番号に完全準拠したマスターデータ（奈良・関西周辺）
     const GSI_STATIONS = [
+        { code: "960763", name: "生駒", lat: 34.6974, lon: 135.6997 },
+        { code: "960764", name: "天理", lat: 34.5989, lon: 135.8406 },
         { code: "950365", name: "広陵", lat: 34.5503, lon: 135.7801 },
         { code: "950366", name: "五條", lat: 34.3541, lon: 135.8272 },
-        { code: "960763", name: "生駒", lat: 34.6974, lon: 135.6997 },
         { code: "940068", name: "奈良吉野", lat: 34.3644, lon: 135.8821 },
         { code: "251266", name: "奈良吉野A", lat: 34.4100, lon: 135.8500 },
-        { code: "960764", name: "天理", lat: 34.5989, lon: 135.8406 },
         { code: "950364", name: "室生", lat: 34.5422, lon: 136.0331 },
         { code: "950367", name: "下北山", lat: 34.1350, lon: 135.9400 },
         { code: "970824", name: "大台ケ原", lat: 34.1853, lon: 136.0028 },
@@ -346,9 +346,8 @@
         { code: "021010", name: "天川", lat: 34.2547, lon: 135.9372 },
         { code: "031108", name: "大塔", lat: 34.1953, lon: 135.7719 },
         { code: "111188", name: "十津川2", lat: 34.0322, lon: 135.8239 },
-        { code: "05115", name: "大阪中央", lat: 34.6863, lon: 135.5200 },
-        { code: "95048", name: "京都中京", lat: 35.0116, lon: 135.7556 },
-        { code: "93011", name: "奈良", lat: 34.6851, lon: 135.8048 }
+        { code: "950336", name: "大阪", lat: 34.6863, lon: 135.5200 },
+        { code: "960761", name: "八尾", lat: 34.6289, lon: 135.6033 }
     ];
 
     function calcDistance(lat1, lon1, lat2, lon2) {
