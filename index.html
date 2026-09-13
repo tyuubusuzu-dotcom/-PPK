@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.4]</title>
+    <title>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.5]</title>
     <style>
         :root {
             --primary-color: #1a73e8;
@@ -161,7 +161,6 @@
             font-weight: bold;
         }
 
-        /* 基準点候補のスタイル */
         .station-list {
             background: #ffffff;
             border: 1px solid #b7e1cd;
@@ -230,7 +229,7 @@
 <body>
 
 <div class="container">
-    <h1>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.4]</h1>
+    <h1>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出 [Ver.5]</h1>
     <div class="subtitle">M4E / L3 などの survey フォルダ内 Timestamp.MRK から必要時間と最寄り基準点を自動算出</div>
 
     <div class="form-group">
@@ -292,7 +291,7 @@
         </div>
         <hr style="border: 0; border-top: 1px solid #d4edda; margin: 10px 0;">
         <div class="result-item" style="display: block;">
-            <span class="result-label" style="display: block; width: 100%; margin-bottom: 4px;">おすすめ最寄り基準点 (候補):</span>
+            <span class="result-label" style="display: block; width: 100%; margin-bottom: 4px;">おすすめ最寄り基準点 (公式局番号付):</span>
             <div id="resStations" class="station-list">
                 <!-- 自動算出された候補がここに表示されます -->
             </div>
@@ -303,7 +302,7 @@
         <div class="section-title" style="margin-bottom: 8px;">4. データの取得手順・入力マッピングガイド</div>
         <ol class="guide-steps">
             <li><b>ログイン・アクセス</b>：下のリンクから国土地理院の電子基準点データ提供サービスにアクセスし、ログイン・注意事項を確認する。</li>
-            <li><b>基準点の選択</b>：上で自動判定された「最寄り基準点（候補）」を参考に、サイト上の地図または一覧から対象の電子基準点を選択する。</li>
+            <li><b>基準点の選択</b>：上で自動判定された「最寄り基準点（公式局番号付）」の局名や番号を参考に、サイト上の都道府県一覧や検索から選択する。</li>
             <li><b>パラメータの入力</b>：上で算出された結果をサイトへ反映する。
                 <ul style="margin-top: 4px; margin-bottom: 4px;">
                     <li><b>対象年月日 (Date)</b> ⇒ 算出された年月日を入力</li>
@@ -329,22 +328,27 @@
 </div>
 
 <script>
-    // 主要な電子基準点マスターデータ（代表局）
+    // 国土地理院の正式な局番号（局番）に合わせたマスターデータ
     const GSI_STATIONS = [
-        { code: "95048", name: "京都中京", lat: 35.0116, lon: 135.7556 },
+        { code: "950365", name: "広陵", lat: 34.5503, lon: 135.7801 },
+        { code: "950366", name: "五條", lat: 34.3541, lon: 135.8272 },
+        { code: "960763", name: "生駒", lat: 34.6974, lon: 135.6997 },
+        { code: "940068", name: "奈良吉野", lat: 34.3644, lon: 135.8821 },
+        { code: "251266", name: "奈良吉野A", lat: 34.4100, lon: 135.8500 },
+        { code: "960764", name: "天理", lat: 34.5989, lon: 135.8406 },
+        { code: "950364", name: "室生", lat: 34.5422, lon: 136.0331 },
+        { code: "950367", name: "下北山", lat: 34.1350, lon: 135.9400 },
+        { code: "970824", name: "大台ケ原", lat: 34.1853, lon: 136.0028 },
+        { code: "970825", name: "十津川", lat: 33.9511, lon: 135.7758 },
+        { code: "021007", name: "月ヶ瀬", lat: 34.6611, lon: 136.0125 },
+        { code: "021008", name: "御杖", lat: 34.4889, lon: 136.1136 },
+        { code: "021009", name: "奈良川上", lat: 34.3314, lon: 135.9611 },
+        { code: "021010", name: "天川", lat: 34.2547, lon: 135.9372 },
+        { code: "031108", name: "大塔", lat: 34.1953, lon: 135.7719 },
+        { code: "111188", name: "十津川2", lat: 34.0322, lon: 135.8239 },
         { code: "05115", name: "大阪中央", lat: 34.6863, lon: 135.5200 },
-        { code: "95049", name: "神戸", lat: 34.6901, lon: 135.1856 },
-        { code: "93011", name: "奈良", lat: 34.6851, lon: 135.8048 },
-        { code: "95047", name: "大津", lat: 35.0037, lon: 135.8622 },
-        { code: "96057", name: "和歌山", lat: 34.2265, lon: 135.1675 },
-        { code: "95050", name: "津", lat: 34.7214, lon: 136.5050 },
-        { code: "93010", name: "名古屋", lat: 35.1681, lon: 136.9083 },
-        { code: "01101", name: "東京大手町", lat: 35.6888, lon: 139.7651 },
-        { code: "03114", name: "横浜", lat: 35.4478, lon: 139.6425 },
-        { code: "94008", name: "福岡", lat: 33.5859, lon: 130.3956 },
-        { code: "94009", name: "広島", lat: 34.3965, lon: 132.4596 },
-        { code: "95054", name: "札幌", lat: 43.0642, lon: 141.3469 },
-        { code: "95052", name: "仙台", lat: 38.2682, lon: 140.8694 }
+        { code: "95048", name: "京都中京", lat: 35.0116, lon: 135.7556 },
+        { code: "93011", name: "奈良", lat: 34.6851, lon: 135.8048 }
     ];
 
     function calcDistance(lat1, lon1, lat2, lon2) {
@@ -451,7 +455,6 @@
                 timestamps.push(dtJst);
             }
 
-            // 緯度・経度の抽出 (Lat / Lon タグ付近の数値を探索)
             for (let i = 0; i < parts.length; i++) {
                 if (parts[i].includes('Lat') && i > 0) {
                     let latVal = parseFloat(parts[i-1]);
@@ -483,24 +486,21 @@
         let gpsEpoch = Date.UTC(1980, 0, 6, 0, 0, 0);
         let gpsWeekCalc = Math.floor((bufferStart.getTime() - gpsEpoch) / (1000 * 60 * 60 * 24 * 7));
 
-        // 現場の中心座標を算出
         let stationHtml = "位置情報が取得できませんでした";
         if (lats.length > 0 && lons.length > 0) {
             let centerLat = lats.reduce((a, b) => a + b, 0) / lats.length;
             let centerLon = lons.reduce((a, b) => a + b, 0) / lons.length;
 
-            // 各基準点との距離を計算してソート
             let distances = GSI_STATIONS.map(st => {
                 let dist = calcDistance(centerLat, centerLon, st.lat, st.lon);
                 return { ...st, dist: dist };
             });
             distances.sort((a, b) => a.dist - b.dist);
 
-            // 上位3局をリストアップ
             stationHtml = "";
             for (let i = 0; i < Math.min(3, distances.length); i++) {
                 let st = distances[i];
-                stationHtml += `<div class="station-item"><b>${i+1}. ${st.name}</b> (コード: ${st.code}) - 約 <b>${st.dist.toFixed(1)} km</b></div>`;
+                stationHtml += `<div class="station-item"><b>${i+1}. ${st.name}</b> (局番号: <b>${st.code}</b>) - 約 <b>${st.dist.toFixed(1)} km</b></div>`;
             }
         }
 
