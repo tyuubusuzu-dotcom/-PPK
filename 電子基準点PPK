@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<!-- translate="no" でブラウザの勝手な自動翻訳を禁止 -->
+<html lang="ja" translate="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出ツール</title>
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --primary-hover: #1557b0;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #202124;
+            --border-color: #dadce0;
+            --success-bg: #e6f4ea;
+            --success-text: #137333;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 650px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #1f1f1f;
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: #5f6368;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #3c4043;
+            border-left: 3px solid var(--primary-color);
+            padding-left: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #3c4043;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            background-color: #fff;
+            box-sizing: border-box;
+        }
+
+        /* ドラッグ＆ドロップエリア（MRKファイル専用） */
+        .drop-zone {
+            border: 2px dashed var(--primary-color);
+            border-radius: 8px;
+            padding: 30px 20px;
+            text-align: center;
+            background-color: #f4f8fb;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .drop-zone:hover {
+            background-color: #e8f0fe;
+        }
+
+        .drop-zone p {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .file-input-hidden {
+            display: none;
+        }
+
+        .btn-browse {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-browse:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* 結果表示エリア */
+        .result-box {
+            background-color: #f1f3f4;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result-box.active {
+            display: block;
+            background-color: var(--success-bg);
+            border: 1px solid #ceead6;
+        }
+
+        .result-item {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-label {
+            font-weight: bold;
+            color: #135125;
+            display: inline-block;
+            width: 160px;
+        }
+
+        .result-value {
+            font-family: monospace;
+            font-size: 15px;
+            color: #0d3b19;
+            font-weight: bold;
+        }
+
+        .links-section {
+            margin-top: 20px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 15px;
+        }
+
+        .links-section a {
+            display: block;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .links-section a:hover {
+            text-decoration: underline;
+        }
+
+        .note {
+            font-size: 12px;
+            color: #5f6368;
+            margin-top: 15px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>DJI 撮影データ時刻 ＆ 電子基準点パラメータ抽出</h1>
+    <div class="subtitle">M4E / L3 などの survey フォルダ内 Timestamp.MRK から必要時間を自動算出</div>
+
+    <!-- 測地成果・ジオイドモデル選択 -->
+    <div class="form-group">
+        <div class="section-title">1. 測地成果・ジオイドモデルの選択</div>
+        <label for="geoidModel" style="margin-top: 8px; font-weight: normal; color: #5f6368;">
+            ※ICT施工等の測量目的に合わせ、適用するモデルを選択してください。
+        </label>
+        <select id="geoidModel">
+            <option value="JGD2024">JGD2024 (GSIGEO2024) ※新基準</option>
+            <option value="JGD2011" selected>JGD2011 (GSIGEO2011) ※従来基準・一般普及</option>
+            <option value="FUTURE_UPDATE">将来の更新成果 / カスタムモデル対応</option>
+        </select>
+    </div>
+
+    <!-- ファイル選択・ドロップエリア（軽量なMRKファイルのみ対象） -->
+    <div class="form-group">
+        <div class="section-title">2. 撮影データの読込 (Timestamp.MRK)</div>
+        <p style="font-size: 12px; color: #5f6368; margin: 6px 0 12px 0;">
+            大容量の画像ファイルは読み込まず、軽量な <b>Timestamp.MRK</b> ファイルのみをドラッグ＆ドロップ、または選択してください。
+        </p>
+        
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <p>ここに <b>Timestamp.MRK</b> ファイルをドラッグ＆ドロップ</p>
+            <button class="btn-browse" type="button">ファイルを選択する</button>
+            <input type="file" id="fileInput" class="file-input-hidden" accept=".mrk,.MRK" multiple>
+        </div>
+    </div>
+
+    <!-- 解析結果エリア -->
+    <div class="result-box" id="resultBox">
+        <div class="section-title" style="border-left-color: #137333; margin-bottom: 12px;">3. 国土地理院 電子基準点データ取得用パラメータ</div>
+        
+        <div class="result-item">
+            <span class="result-label">適用モデル:</span>
+            <span id="resModel" style="font-weight: bold; color: #137333;">-</span>
+        </div>
+        <div class="result-item">
+            <span class="result-label">撮影実測 (開始):</span>
+            <span id="resRawStart">-</span>
+        </div>
+        <div class="result-item">
+            <span class="result-label">撮影実測 (終了):</span>
+            <span id="resRawEnd">-</span>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #d4edda; margin: 10px 0;">
+        <div class="result-item">
+            <span class="result-label">対象年月日 (Date):</span>
+            <span id="resDate" class="result-value">-</span>
+        </div>
+        <div class="result-item">
+            <span class="result-label">通算日 (DOY):</span>
+            <span id="resDoy" class="result-value">-</span>
+        </div>
+        <div class="result-item">
+            <span class="result-label">推奨時間帯 (Hour):</span>
+            <span id="resHour" class="result-value">-</span>
+        </div>
+        <div class="result-item">
+            <span class="result-label">GPS週 (GPS Week):</span>
+            <span id="resGpsWeek" class="result-value">-</span>
+        </div>
+    </div>
+
+    <!-- 参考リンク集 -->
+    <div class="links-section">
+        <div class="section-title">4. 国土地理院 関連リンク</div>
+        <a href="https://terras.gsi.go.jp/" target="_blank" rel="noopener">🔗 電子基準点データ提供サービス (terras)</a>
+        <a href="https://terras.gsi.go.jp/sso_notes.php" target="_blank" rel="noopener">🔗 電子基準点データ提供サービス ログイン・注意事項</a>
+        <a href="https://www.gsi.go.jp/denshi/denshi_data.html" target="_blank" rel="noopener">🔗 電子基準点データ・解析データ一覧 (測地成果等)</a>
+    </div>
+
+    <div class="note">
+        ※ 算出される時間範囲には、PPK解析の精度収束安定化のため前後に15分のバッファを自動付与しています。<br>
+        ※ 測地成果は現場の設計データや公共測量の規定に合わせて適切に選択してください。
+    </div>
+</div>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const resultBox = document.getElementById('resultBox');
+
+    // ドラッグ＆ドロップのイベント制御
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.style.backgroundColor = '#e8f0fe';
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.style.backgroundColor = '#f4f8fb';
+        }, false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+    });
+
+    function handleFiles(files) {
+        let mrkFile = null;
+        for (let i = 0; i < files.length; i++) {
+            if (files[i].name.toLowerCase().endsWith('.mrk')) {
+                mrkFile = files[i];
+                break;
+            }
+        }
+
+        if (!mrkFile) {
+            alert('有効な Timestamp.MRK ファイルが見つかりませんでした。拡張子が .mrk のファイルを選択してください。');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            parseMrkContent(e.target.result);
+        };
+        reader.readAsText(mrkFile);
+    }
+
+    function gpsToUtc(gpsWeek, gpsSeconds) {
+        // GPSエポック: 1980年1月6日 00:00:00 UTC
+        const gpsEpoch = Date.UTC(1980, 0, 6, 0, 0, 0);
+        const leapSeconds = 18; // 現在のうるう秒差
+        const totalMs = gpsEpoch + (gpsWeek * 7 * 86400 + gpsSeconds - leapSeconds) * 1000;
+        return new Date(totalMs);
+    }
+
+    function parseMrkContent(content) {
+        const lines = content.split('\n');
+        const timestamps = [];
+
+        for (let line of lines) {
+            const parts = line.trim().replace(/,/g, ' ').split(/\s+/);
+            if (parts.length < 3) continue;
+
+            const numericParts = parts.map(p => parseFloat(p)).filter(n => !isNaN(n));
+            for (let i = 0; i < numericParts.length; i++) {
+                let val = numericParts[i];
+                // GPS週の一般的な範囲 (2000〜3000)
+                if (val >= 2000 && val < 3000 && i + 1 < numericParts.length) {
+                    let gpsWeek = Math.floor(val);
+                    let gpsSec = numericParts[i + 1];
+                    if (gpsSec >= 0 && gpsSec <= 604800) {
+                        let dtUtc = gpsToUtc(gpsWeek, gpsSec);
+                        // JST (+9時間) に変換
+                        let dtJst = new Date(dtUtc.getTime() + 9 * 3600 * 1000);
+                        timestamps.push(dtJst);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (timestamps.length === 0) {
+            alert('MRKファイルから有効なGPSタイムスタンプを抽出できませんでした。ファイルの形式を確認してください。');
+            return;
+        }
+
+        // 最古と最新のタイムスタンプを特定
+        timestamps.sort((a, b) => a - b);
+        let rawStart = timestamps[0];
+        let rawEnd = timestamps[timestamps.length - 1];
+
+        // 前後に15分のバッファを付与
+        let bufferStart = new Date(rawStart.getTime() - 15 * 60 * 1000);
+        let bufferEnd = new Date(rawEnd.getTime() + 15 * 60 * 1000);
+
+        // DOY (通算日) の計算
+        let startOfYear = new Date(bufferStart.getFullYear(), 0, 1);
+        let doy = Math.floor((bufferStart - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
+        let doyStr = String(doy).padStart(3, '0');
+
+        // GPS週の計算
+        let gpsEpoch = Date.UTC(1980, 0, 6, 0, 0, 0);
+        let gpsWeek = Math.floor((bufferStart.getTime() - gpsEpoch) / (1000 * 60 * 60 * 24 * 7));
+
+        // 画面への反映
+        const modelSelect = document.getElementById('geoidModel');
+        document.getElementById('resModel').innerText = modelSelect.options[modelSelect.selectedIndex].text;
+        
+        document.getElementById('resRawStart').innerText = formatDate(rawStart);
+        document.getElementById('resRawEnd').innerText = formatDate(rawEnd);
+
+        document.getElementById('resDate').innerText = formatDateYMD(bufferStart);
+        document.getElementById('resDoy').innerText = doyStr;
+        document.getElementById('resHour').innerText = String(bufferStart.getHours()).padStart(2, '0') + '時 ～ ' + String(bufferEnd.getHours()).padStart(2, '0') + '時';
+        document.getElementById('resGpsWeek').innerText = gpsWeek;
+
+        resultBox.classList.add('active');
+    }
+
+    function formatDate(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        const h = String(date.getHours()).padStart(2, '0');
+        const min = String(date.getMinutes()).padStart(2, '0');
+        const s = String(date.getSeconds()).padStart(2, '0');
+        return `${y}-${m}-${d} ${h}:${min}:${s} (JST)`;
+    }
+
+    function formatDateYMD(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+</script>
+
+</body>
+</html>
